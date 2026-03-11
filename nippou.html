@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>車両運行日報</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+:root {
+  --navy: #1a2744;
+  --blue: #2563a8;
+  --blue-light: #eff6ff;
+  --accent: #0ea5e9;
+  --border: #cbd5e1;
+  --bg: #f1f5f9;
+  --white: #ffffff;
+  --text: #1e293b;
+  --sub: #64748b;
+  --danger: #ef4444;
+  --green: #16a34a;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html { font-size: 16px; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 100px;
+}
+
+/* ── ヘッダー ── */
+.app-header {
+  background: var(--navy);
+  color: white;
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+.app-header h1 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.header-date {
+  font-size: 12px;
+  color: #93c5fd;
+  margin-top: 2px;
+}
+
+.btn-reset-sm {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer;
+}
+
+/* ── セクション共通 ── */
+.section {
+  margin: 16px 14px 0;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--blue);
+  border-radius: 2px;
+}
+
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* ── フォーム行 ── */
+.form-row {
+  display: flex;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 12px;
+}
+.form-row:last-child { border-bottom: none; }
+
+.form-row label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sub);
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.form-row input,
+.form-row select {
+  flex: 1;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  font-size: 16px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  outline: none;
+  padding: 4px 0;
+  min-width: 0;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.form-row input:focus,
+.form-row select:focus { border-bottom-color: var(--blue); }
+
+.form-row .unit {
+  font-size: 13px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+.distance-val {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--blue);
+  text-align: right;
+  padding-right: 4px;
+}
+
+/* ── 集配カード ── */
+.delivery-cards { display: flex; flex-direction: column; gap: 10px; }
+
+.d-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border-left: 4px solid var(--border);
+  transition: border-color 0.2s;
+}
+
+.d-card.has-data { border-left-color: var(--blue); }
+
+.d-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--blue-light);
+  cursor: pointer;
+  user-select: none;
+}
+
+.d-card-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue);
+  background: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.d-card-preview {
+  flex: 1;
+  margin-left: 10px;
+  font-size: 13px;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.d-card-preview.filled { color: var(--text); font-weight: 500; }
+
+.d-card-arrow {
+  font-size: 18px;
+  color: var(--sub);
+  transition: transform 0.2s;
+  margin-left: 8px;
+}
+.d-card.open .d-card-arrow { transform: rotate(180deg); }
+
+.d-card-body {
+  display: none;
+  padding: 12px 14px;
+  border-top: 1px solid #f1f5f9;
+  flex-direction: column;
+  gap: 10px;
+}
+.d-card.open .d-card-body { display: flex; }
+
+/* カード内フィールド */
+.d-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.d-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sub);
+  white-space: nowrap;
+  min-width: 52px;
+}
+
+.d-field input[type="text"],
+.d-field input[type="number"] {
+  flex: 1;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  font-size: 16px;
+  font-family: 'Noto Sans JP', sans-serif;
+  color: var(--text);
+  background: transparent;
+  outline: none;
+  padding: 4px 0;
+  min-width: 0;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.d-field input:focus { border-bottom-color: var(--blue); }
+
+.time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.time-row input {
+  width: 48px !important;
+  flex: none !important;
+  text-align: center;
+  font-size: 18px !important;
+  font-weight: 500;
+}
+
+.time-sep { font-size: 18px; font-weight: 700; color: var(--sub); }
+
+.time-lbl {
+  font-size: 11px;
+  color: var(--sub);
+  margin-left: 2px;
+}
+
+.check-group {
+  display: flex;
+  gap: 12px;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  flex: 1;
+  justify-content: center;
+}
+.check-item.checked-delivery {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  color: var(--blue);
+}
+.check-item.checked-pickup {
+  border-color: var(--green);
+  background: #f0fdf4;
+  color: var(--green);
+}
+
+.check-item input { display: none; }
+
+.check-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.num-row {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+.num-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.num-item label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sub);
+  min-width: auto;
+  white-space: nowrap;
+}
+
+.num-item input {
+  flex: 1;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  font-size: 18px;
+  font-weight: 500;
+  font-family: 'Noto Sans JP', sans-serif;
+  text-align: center;
+  background: transparent;
+  outline: none;
+  padding: 4px 0;
+  -webkit-appearance: none;
+  transition: border-color 0.2s;
+}
+.num-item input:focus { border-bottom-color: var(--blue); }
+
+/* ── 経費 ── */
+.exp-total-box {
+  background: var(--blue-light);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+.exp-total-label { font-size: 13px; font-weight: 700; color: var(--blue); }
+.exp-total-val { font-size: 22px; font-weight: 700; color: var(--blue); }
+
+/* ── メモ ── */
+.memo-ta {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  font-size: 15px;
+  font-family: 'Noto Sans JP', sans-serif;
+  background: transparent;
+  outline: none;
+  resize: none;
+  padding: 8px 0;
+  color: var(--text);
+  transition: border-color 0.2s;
+  height: 80px;
+}
+.memo-ta:focus { border-bottom-color: var(--blue); }
+
+/* ── 下部固定ボタン ── */
+.fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.12);
+  display: flex;
+  gap: 10px;
+  z-index: 200;
+}
+
+.btn-pdf {
+  flex: 1;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 16px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s;
+  -webkit-appearance: none;
+}
+.btn-pdf:active { background: #1d4ed8; transform: scale(0.98); }
+
+/* ── 印刷用スタイル ── */
+@media print {
+  @page { size: A4; margin: 10mm; }
+
+  body { background: white; padding: 0; font-size: 11px; }
+  .app-header, .fixed-bottom, .d-card-header { display: none !important; }
+  .section { margin: 0 0 8px 0; }
+  .section-title { font-size: 9px; margin-bottom: 4px; }
+  .card, .d-card { box-shadow: none; border: 1px solid #ccc; border-radius: 4px; border-left: none; }
+  .d-card-body { display: flex !important; padding: 6px 10px; gap: 6px; }
+  .form-row { padding: 6px 10px; }
+  .form-row input, .form-row label { font-size: 11px; }
+  .d-field label, .d-field input { font-size: 11px; }
+  .check-item { padding: 4px 8px; font-size: 10px; }
+  .delivery-cards { gap: 4px; }
+  .d-card.empty-card { display: none; }
+  .fixed-bottom { display: none; }
+  .memo-ta { height: auto; min-height: 40px; }
+
+  /* 印刷用ヘッダー */
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #1a2744;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+  .print-header h1 { font-size: 18px; font-weight: 700; letter-spacing: 3px; }
+  .print-footer {
+    display: block !important;
+    text-align: center;
+    font-size: 9px;
+    color: #666;
+    margin-top: 10px;
+    padding-top: 6px;
+    border-top: 1px solid #ccc;
+  }
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* 印刷時のみ表示 */
+.print-header, .print-footer { display: none; }
+</style>
+</head>
+<body>
+
+<!-- 印刷用ヘッダー -->
+<div class="print-header">
+  <h1>◆ 車両運行日報</h1>
+  <div id="print-info" style="text-align:right;font-size:12px;"></div>
+</div>
+
+<!-- アプリヘッダー -->
+<div class="app-header">
+  <div>
+    <h1>◆ 車両運行日報</h1>
+    <div class="header-date" id="header-date"></div>
+  </div>
+  <button class="btn-reset-sm" onclick="resetForm()">リセット</button>
+</div>
+
+<!-- 基本情報 -->
+<div class="section">
+  <div class="section-title">基本情報</div>
+  <div class="card">
+    <div class="form-row">
+      <label>運行日</label>
+      <input type="date" id="run-date" oninput="updateDate()">
+    </div>
+    <div class="form-row">
+      <label>車両番号</label>
+      <input type="text" id="car-num" placeholder="例：名古屋481れ577" inputmode="text">
+    </div>
+    <div class="form-row">
+      <label>所属</label>
+      <input type="text" id="location" placeholder="例：名古屋 営業所">
+    </div>
+    <div class="form-row">
+      <label>ドライバー</label>
+      <input type="text" id="driver" placeholder="例：鈴木 賢治">
+    </div>
+  </div>
+</div>
+
+<!-- メーター -->
+<div class="section">
+  <div class="section-title">メーター</div>
+  <div class="card">
+    <div class="form-row">
+      <label>出発</label>
+      <input type="number" id="start-m" inputmode="numeric" placeholder="000000" oninput="calcDist()">
+      <span class="unit">km</span>
+    </div>
+    <div class="form-row">
+      <label>終了</label>
+      <input type="number" id="end-m" inputmode="numeric" placeholder="000000" oninput="calcDist()">
+      <span class="unit">km</span>
+    </div>
+    <div class="form-row" style="background:#eff6ff;">
+      <label style="color:var(--blue);">走行距離</label>
+      <div class="distance-val" id="distance">－</div>
+      <span class="unit" style="color:var(--blue);">km</span>
+    </div>
+  </div>
+</div>
+
+<!-- 集配記録 -->
+<div class="section">
+  <div class="section-title">集配記録</div>
+  <div class="delivery-cards" id="d-cards"></div>
+</div>
+
+<!-- 経費 -->
+<div class="section">
+  <div class="section-title">経費</div>
+  <div class="card">
+    <div class="form-row">
+      <label>高速代</label>
+      <input type="number" id="exp-hw" inputmode="numeric" placeholder="0" oninput="calcExp()">
+      <span class="unit">円</span>
+    </div>
+    <div class="form-row">
+      <label>駐車代</label>
+      <input type="number" id="exp-pk" inputmode="numeric" placeholder="0" oninput="calcExp()">
+      <span class="unit">円</span>
+    </div>
+    <div class="form-row">
+      <label>その他</label>
+      <input type="number" id="exp-ot" inputmode="numeric" placeholder="0" oninput="calcExp()">
+      <span class="unit">円</span>
+    </div>
+    <div style="padding:10px 14px;">
+      <div class="exp-total-box">
+        <span class="exp-total-label">合　計</span>
+        <span class="exp-total-val"><span id="exp-total">0</span> 円</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- メモ -->
+<div class="section">
+  <div class="section-title">特記事項・メモ</div>
+  <div class="card" style="padding:14px 16px;">
+    <textarea class="memo-ta" id="memo" placeholder="キャンセル・事故・特記事項など"></textarea>
+  </div>
+</div>
+
+<!-- 下部固定ボタン -->
+<div class="fixed-bottom">
+  <button class="btn-pdf" onclick="doPrint()">
+    🖨 印刷 / PDF保存
+  </button>
+</div>
+
+<div class="print-footer">
+  ☆ミス・事故・トラブルが発生した場合は、速やかに営業所に連絡し指示を仰ぎましょう！！
+</div>
+
+<script>
+// 今日の日付セット
+const now = new Date();
+const ymd = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+document.getElementById('run-date').value = ymd;
+updateDate();
+
+function updateDate() {
+  const v = document.getElementById('run-date').value;
+  if (!v) return;
+  const d = new Date(v);
+  const days = ['日','月','火','水','木','金','土'];
+  const str = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  document.getElementById('header-date').textContent = str;
+  document.getElementById('print-info').innerHTML =
+    `運行日：${str}<br>` +
+    `ドライバー：${document.getElementById('driver').value || '　　　　'}`;
+}
+
+// 集配カード生成
+const container = document.getElementById('d-cards');
+for (let i = 1; i <= 20; i++) {
+  const div = document.createElement('div');
+  div.className = 'd-card';
+  div.id = `dc-${i}`;
+  div.innerHTML = `
+    <div class="d-card-header" onclick="toggleCard(${i})">
+      <div class="d-card-num">${i}</div>
+      <div class="d-card-preview" id="prev-${i}">未入力</div>
+      <div class="d-card-arrow">▼</div>
+    </div>
+    <div class="d-card-body">
+      <div class="d-field">
+        <label>着　時刻</label>
+        <div class="time-row">
+          <input type="number" min="0" max="23" inputmode="numeric" placeholder="--" id="ah-${i}" oninput="updatePreview(${i})">
+          <span class="time-sep">:</span>
+          <input type="number" min="0" max="59" inputmode="numeric" placeholder="--" id="am-${i}" oninput="updatePreview(${i})">
+        </div>
+      </div>
+      <div class="d-field">
+        <label>発　時刻</label>
+        <div class="time-row">
+          <input type="number" min="0" max="23" inputmode="numeric" placeholder="--" id="dh-${i}" oninput="updatePreview(${i})">
+          <span class="time-sep">:</span>
+          <input type="number" min="0" max="59" inputmode="numeric" placeholder="--" id="dm-${i}" oninput="updatePreview(${i})">
+        </div>
+      </div>
+      <div class="d-field">
+        <label>住　所</label>
+        <input type="text" placeholder="集配先名・住所" id="addr-${i}" oninput="updatePreview(${i})">
+      </div>
+      <div class="d-field">
+        <label>件数/個数</label>
+        <div class="num-row">
+          <div class="num-item">
+            <label>件数</label>
+            <input type="number" inputmode="numeric" placeholder="0" id="n1-${i}">
+          </div>
+          <div class="num-item">
+            <label>個数</label>
+            <input type="number" inputmode="numeric" placeholder="0" id="n2-${i}">
+          </div>
+        </div>
+      </div>
+      <div class="d-field">
+        <label>業　務</label>
+        <div class="check-group">
+          <label class="check-item" id="ci-d-${i}" onclick="toggleCheck('d',${i})">
+            <input type="checkbox" id="chk-d-${i}">
+            <span class="check-label">🚚 配達</span>
+          </label>
+          <label class="check-item" id="ci-p-${i}" onclick="toggleCheck('p',${i})">
+            <input type="checkbox" id="chk-p-${i}">
+            <span class="check-label">📦 集荷</span>
+          </label>
+        </div>
+      </div>
+      <div class="d-field">
+        <label>備　考</label>
+        <input type="text" placeholder="例：助手 10:00" id="note-${i}">
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+function toggleCard(i) {
+  const card = document.getElementById(`dc-${i}`);
+  card.classList.toggle('open');
+}
+
+function toggleCheck(type, i) {
+  event.preventDefault();
+  const el = document.getElementById(`ci-${type}-${i}`);
+  const chk = document.getElementById(`chk-${type}-${i}`);
+  chk.checked = !chk.checked;
+  if (type === 'd') {
+    el.classList.toggle('checked-delivery', chk.checked);
+  } else {
+    el.classList.toggle('checked-pickup', chk.checked);
+  }
+}
+
+function updatePreview(i) {
+  const addr = document.getElementById(`addr-${i}`).value;
+  const ah = document.getElementById(`ah-${i}`).value;
+  const am = document.getElementById(`am-${i}`).value;
+  const prev = document.getElementById(`prev-${i}`);
+  const card = document.getElementById(`dc-${i}`);
+
+  if (addr || ah) {
+    const time = (ah || am) ? `${String(ah).padStart(2,'0')}:${String(am||0).padStart(2,'0')} ` : '';
+    prev.textContent = time + (addr || '');
+    prev.classList.add('filled');
+    card.classList.add('has-data');
+  } else {
+    prev.textContent = '未入力';
+    prev.classList.remove('filled');
+    card.classList.remove('has-data');
+  }
+}
+
+// 走行距離
+function calcDist() {
+  const s = +document.getElementById('start-m').value || 0;
+  const e = +document.getElementById('end-m').value || 0;
+  const el = document.getElementById('distance');
+  if (e > s && s > 0) {
+    el.textContent = (e - s).toLocaleString();
+  } else {
+    el.textContent = '－';
+  }
+}
+
+// 経費合計
+function calcExp() {
+  const t = ['exp-hw','exp-pk','exp-ot'].reduce((s,id) => s + (+document.getElementById(id).value||0), 0);
+  document.getElementById('exp-total').textContent = t.toLocaleString();
+}
+
+// 印刷前にprint-infoを更新
+function doPrint() {
+  const driver = document.getElementById('driver').value;
+  const date = document.getElementById('run-date').value;
+  if (date) {
+    const d = new Date(date);
+    const days = ['日','月','火','水','木','金','土'];
+    const str = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+    document.getElementById('print-info').innerHTML =
+      `運行日：${str}<br>ドライバー：${driver || ''}`;
+  }
+  // 入力済みカードを全部開く（印刷用）
+  for (let i = 1; i <= 20; i++) {
+    const card = document.getElementById(`dc-${i}`);
+    const addr = document.getElementById(`addr-${i}`).value;
+    const ah = document.getElementById(`ah-${i}`).value;
+    if (addr || ah) {
+      card.classList.add('open');
+    } else {
+      card.classList.add('empty-card');
+    }
+  }
+  setTimeout(() => window.print(), 100);
+}
+
+// リセット
+function resetForm() {
+  if (!confirm('入力内容をすべてリセットしますか？')) return;
+  document.querySelectorAll('input[type="text"],input[type="number"],textarea').forEach(el => el.value='');
+  document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked=false);
+  for (let i=1;i<=20;i++) {
+    document.getElementById(`ci-d-${i}`)?.classList.remove('checked-delivery');
+    document.getElementById(`ci-p-${i}`)?.classList.remove('checked-pickup');
+    document.getElementById(`dc-${i}`).classList.remove('open','has-data','empty-card');
+    document.getElementById(`prev-${i}`).textContent='未入力';
+    document.getElementById(`prev-${i}`).classList.remove('filled');
+  }
+  document.getElementById('distance').textContent='－';
+  document.getElementById('exp-total').textContent='0';
+  const n=new Date();
+  document.getElementById('run-date').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  updateDate();
+}
+</script>
+</body>
+</html>
