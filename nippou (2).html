@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>車両運行日報</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+:root {
+  --navy: #1a2744;
+  --blue: #2563a8;
+  --blue-light: #eff6ff;
+  --border: #94a3b8;
+  --bg: #f1f5f9;
+  --white: #fff;
+  --text: #1e293b;
+  --sub: #64748b;
+  --green: #16a34a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: 90px;
+}
+
+.app-header {
+  background: var(--navy); color: white;
+  padding: 14px 18px; position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.app-header h1 { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+.header-sub { font-size: 11px; color: #93c5fd; margin-top: 2px; }
+.btn-reset-sm {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: white; border-radius: 8px; padding: 7px 14px;
+  font-size: 13px; font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
+}
+
+.section { margin: 14px 12px 0; }
+.section-title {
+  font-size: 11px; font-weight: 700; color: var(--blue);
+  letter-spacing: 2px; margin-bottom: 6px; padding-left: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.section-title::before {
+  content: ''; display: inline-block;
+  width: 3px; height: 13px; background: var(--blue); border-radius: 2px;
+}
+.card { background: var(--white); border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
+.form-row {
+  display: flex; align-items: center;
+  padding: 12px 15px; border-bottom: 1px solid #f1f5f9; gap: 10px;
+}
+.form-row:last-child { border-bottom: none; }
+.form-row label { font-size: 12px; font-weight: 700; color: var(--sub); white-space: nowrap; min-width: 76px; }
+.form-row input {
+  flex: 1; border: none; border-bottom: 2px solid #e2e8f0;
+  font-size: 16px; font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 500; color: var(--text); background: transparent;
+  outline: none; padding: 3px 0; min-width: 0; transition: border-color 0.2s; -webkit-appearance: none;
+}
+.form-row input:focus { border-bottom-color: var(--blue); }
+.unit { font-size: 12px; color: var(--sub); white-space: nowrap; }
+.dist-val { flex: 1; font-size: 20px; font-weight: 700; color: var(--blue); text-align: right; padding-right: 4px; }
+
+.d-cards { display: flex; flex-direction: column; gap: 8px; }
+.d-card {
+  background: var(--white); border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-left: 4px solid #e2e8f0; overflow: hidden; transition: border-color 0.2s;
+}
+.d-card.filled { border-left-color: var(--blue); }
+.d-head {
+  display: flex; align-items: center; padding: 10px 13px;
+  background: var(--blue-light); cursor: pointer; user-select: none; gap: 10px;
+}
+.d-num {
+  font-size: 13px; font-weight: 700; color: var(--blue);
+  background: white; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0;
+}
+.d-prev { flex: 1; font-size: 12px; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d-prev.on { color: var(--text); font-weight: 500; }
+.d-arrow { font-size: 16px; color: var(--sub); transition: transform 0.2s; }
+.d-card.open .d-arrow { transform: rotate(180deg); }
+.d-body { display: none; padding: 10px 13px; flex-direction: column; gap: 9px; border-top: 1px solid #f1f5f9; }
+.d-card.open .d-body { display: flex; }
+
+.df { display: flex; align-items: center; gap: 8px; }
+.df label { font-size: 11px; font-weight: 700; color: var(--sub); white-space: nowrap; min-width: 50px; }
+.df input[type=text], .df input[type=number] {
+  flex: 1; border: none; border-bottom: 2px solid #e2e8f0;
+  font-size: 15px; font-family: 'Noto Sans JP', sans-serif;
+  color: var(--text); background: transparent; outline: none;
+  padding: 3px 0; min-width: 0; transition: border-color 0.2s; -webkit-appearance: none;
+}
+.df input:focus { border-bottom-color: var(--blue); }
+.time-wrap { display: flex; align-items: center; gap: 4px; flex: 1; }
+.time-wrap input { width: 44px !important; flex: none !important; text-align: center; font-size: 17px !important; font-weight: 500; }
+.time-sep { font-size: 18px; font-weight: 700; color: var(--sub); }
+.nums { display: flex; gap: 12px; flex: 1; }
+.num-item { flex: 1; display: flex; align-items: center; gap: 5px; }
+.num-item label { font-size: 11px; font-weight: 700; color: var(--sub); min-width: auto; }
+.num-item input { flex: 1; border: none; border-bottom: 2px solid #e2e8f0; font-size: 16px; font-weight: 500; font-family: 'Noto Sans JP', sans-serif; text-align: center; background: transparent; outline: none; padding: 3px 0; -webkit-appearance: none; transition: border-color 0.2s; }
+.num-item input:focus { border-bottom-color: var(--blue); }
+.chks { display: flex; gap: 8px; flex: 1; }
+.chk-btn {
+  flex: 1; border: 2px solid #e2e8f0; border-radius: 8px;
+  padding: 8px; text-align: center; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s; user-select: none;
+}
+.chk-btn.on-d { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+.chk-btn.on-p { border-color: var(--green); background: #f0fdf4; color: var(--green); }
+
+.exp-total {
+  background: var(--blue-light); border-radius: 10px; padding: 11px 14px;
+  display: flex; align-items: center; justify-content: space-between; margin-top: 4px;
+}
+.exp-total-lbl { font-size: 13px; font-weight: 700; color: var(--blue); }
+.exp-total-val { font-size: 21px; font-weight: 700; color: var(--blue); }
+
+.memo-ta {
+  width: 100%; border: none; border-bottom: 2px solid #e2e8f0;
+  font-size: 15px; font-family: 'Noto Sans JP', sans-serif;
+  background: transparent; outline: none; resize: none;
+  padding: 6px 0; color: var(--text); height: 70px;
+}
+.memo-ta:focus { border-bottom-color: var(--blue); }
+
+.fixed-btn {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: white; padding: 12px 14px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 14px rgba(0,0,0,0.1); z-index: 200;
+  display: flex; gap: 10px;
+}
+.btn-print {
+  flex: 1; border: none;
+  border-radius: 10px; padding: 15px; font-size: 15px;
+  font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
+  cursor: pointer; letter-spacing: 1px; -webkit-appearance: none;
+}
+.btn-pdf { background: #0ea5e9; color: white; }
+.btn-pdf:active { background: #0284c7; }
+.btn-prn { background: var(--blue); color: white; }
+.btn-prn:active { background: #1d4ed8; }
+
+/* ════ 印刷（A4一枚完結） ════ */
+@media print {
+  @page { size: A4 portrait; margin: 7mm; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: white !important; padding: 0 !important; font-size: 8.5pt; }
+  .app-header, .fixed-btn, .section-title, .d-head,
+  .exp-total, .section { display: none !important; }
+  .print-wrap { display: block !important; }
+
+  .p-head { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1a2744; padding-bottom: 4px; margin-bottom: 4px; }
+  .p-head-title { font-size: 15pt; font-weight: 700; letter-spacing: 3px; }
+
+  .p-info { display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr; border: 1px solid #888; margin-bottom: 3px; }
+  .p-info-cell { padding: 3px 6px; border-right: 1px solid #888; }
+  .p-info-cell:last-child { border-right: none; }
+  .p-info-lbl { font-size: 6.5pt; color: #555; display: block; }
+  .p-info-val { font-size: 10pt; font-weight: 600; }
+
+  .p-meter { display: grid !important; grid-template-columns: 1fr 1fr 1fr; border: 1px solid #888; border-top: none; margin-bottom: 4px; }
+  .p-meter-cell { padding: 3px 8px; border-right: 1px solid #888; display: flex; align-items: center; gap: 5px; }
+  .p-meter-cell:last-child { border-right: none; }
+  .p-meter-lbl { font-size: 7pt; color: #444; white-space: nowrap; }
+  .p-meter-val { font-size: 11pt; font-weight: 600; flex: 1; text-align: right; }
+  .p-meter-unit { font-size: 7.5pt; color: #666; }
+
+  .p-table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 4px; }
+  .p-table th { background: #dbeafe !important; border: 1px solid #888; padding: 3px; font-size: 7.5pt; font-weight: 700; text-align: center; white-space: nowrap; }
+  .p-table td { border: 1px solid #bbb; padding: 2.5px 3px; vertical-align: middle; }
+  .p-table tr:nth-child(even) td { background: #f8fbff !important; }
+  .p-num { text-align: center; width: 16pt; background: #eff6ff !important; font-weight: 700; color: #2563a8; }
+  .p-time { text-align: center; width: 34pt; }
+  .p-addr { }
+  .p-cnt { text-align: center; width: 22pt; }
+  .p-chk { text-align: center; width: 18pt; }
+  .p-note { width: 55pt; }
+
+  .p-bottom { display: grid !important; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 3px; }
+  .p-exp-box, .p-memo-box { border: 1px solid #888; padding: 4px 8px; border-radius: 2px; }
+  .p-box-title { font-size: 7.5pt; font-weight: 700; color: #2563a8; border-bottom: 1px solid #bbb; padding-bottom: 2px; margin-bottom: 3px; }
+  .p-exp-row { display: flex; justify-content: space-between; font-size: 8pt; margin-bottom: 2px; }
+  .p-exp-total-row { display: flex; justify-content: space-between; font-size: 10pt; font-weight: 700; color: #2563a8; border-top: 1px solid #bbb; padding-top: 2px; margin-top: 2px; }
+  .p-memo-text { font-size: 8pt; white-space: pre-wrap; line-height: 1.5; }
+  .p-footer { display: block !important; text-align: center; font-size: 6.5pt; color: #666; margin-top: 4px; border-top: 1px solid #ccc; padding-top: 3px; }
+}
+
+.print-wrap { display: none; }
+</style>
+</head>
+<body>
+
+<!-- 印刷専用エリア -->
+<div class="print-wrap" id="print-area">
+  <div class="p-head">
+    <div class="p-head-title">◆ 車両運行日報</div>
+    <div id="p-head-right" style="font-size:8.5pt;text-align:right;"></div>
+  </div>
+  <div class="p-info">
+    <div class="p-info-cell"><span class="p-info-lbl">車両番号</span><span class="p-info-val" id="p-carnum"></span></div>
+    <div class="p-info-cell"><span class="p-info-lbl">運行日</span><span class="p-info-val" id="p-date"></span></div>
+    <div class="p-info-cell"><span class="p-info-lbl">所属箇所</span><span class="p-info-val" id="p-loc"></span></div>
+    <div class="p-info-cell"><span class="p-info-lbl">ドライバー名</span><span class="p-info-val" id="p-driver"></span></div>
+  </div>
+  <div class="p-meter">
+    <div class="p-meter-cell"><span class="p-meter-lbl">出発メーター</span><span class="p-meter-val" id="p-sm"></span><span class="p-meter-unit">km</span></div>
+    <div class="p-meter-cell"><span class="p-meter-lbl">終了メーター</span><span class="p-meter-val" id="p-em"></span><span class="p-meter-unit">km</span></div>
+    <div class="p-meter-cell"><span class="p-meter-lbl">走行距離</span><span class="p-meter-val" id="p-dist" style="color:#2563a8;"></span><span class="p-meter-unit">km</span></div>
+  </div>
+  <table class="p-table">
+    <thead>
+      <tr>
+        <th rowspan="2" class="p-num">社数</th>
+        <th colspan="2">運行時刻</th>
+        <th rowspan="2" class="p-addr">集配先名・住所</th>
+        <th colspan="2">貨物の内容</th>
+        <th colspan="2">業務内容</th>
+        <th rowspan="2" class="p-note">備考</th>
+      </tr>
+      <tr>
+        <th class="p-time">着</th>
+        <th class="p-time">発</th>
+        <th class="p-cnt">件数</th>
+        <th class="p-cnt">個数</th>
+        <th class="p-chk">配達</th>
+        <th class="p-chk">集荷</th>
+      </tr>
+    </thead>
+    <tbody id="p-tbody"></tbody>
+  </table>
+  <div class="p-bottom">
+    <div class="p-exp-box">
+      <div class="p-box-title">経　費</div>
+      <div class="p-exp-row"><span>高速代</span><span id="p-hw">－</span></div>
+      <div class="p-exp-row"><span>駐車代</span><span id="p-pk">－</span></div>
+      <div class="p-exp-row"><span>その他</span><span id="p-ot">－</span></div>
+      <div class="p-exp-total-row"><span>合　計</span><span id="p-total">－</span></div>
+    </div>
+    <div class="p-memo-box">
+      <div class="p-box-title">特記事項・メモ</div>
+      <div class="p-memo-text" id="p-memo"></div>
+    </div>
+  </div>
+  <div class="p-footer">☆ミス・事故・トラブルが発生した場合は、速やかに営業所に連絡し指示を仰ぎましょう！！</div>
+</div>
+
+<!-- スマホ入力UI -->
+<div class="app-header">
+  <div>
+    <h1>◆ 車両運行日報</h1>
+    <div class="header-sub" id="hd-date"></div>
+  </div>
+  <button class="btn-reset-sm" onclick="resetForm()">リセット</button>
+</div>
+
+<div class="section">
+  <div class="section-title">基本情報</div>
+  <div class="card">
+    <div class="form-row"><label>運行日</label><input type="date" id="run-date" oninput="onDateChange()"></div>
+    <div class="form-row"><label>車両番号</label><input type="text" id="car-num" placeholder="例：名古屋481れ577"></div>
+    <div class="form-row"><label>所属箇所</label><input type="text" id="location" placeholder="例：名古屋 営業所"></div>
+    <div class="form-row"><label>ドライバー</label><input type="text" id="driver" placeholder="例：鈴木 賢治"></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">メーター</div>
+  <div class="card">
+    <div class="form-row"><label>出発</label><input type="number" id="start-m" inputmode="numeric" placeholder="000000" oninput="calcDist()"><span class="unit">km</span></div>
+    <div class="form-row"><label>終了</label><input type="number" id="end-m" inputmode="numeric" placeholder="000000" oninput="calcDist()"><span class="unit">km</span></div>
+    <div class="form-row" style="background:#eff6ff;"><label style="color:var(--blue);">走行距離</label><div class="dist-val" id="dist-disp">－</div><span class="unit" style="color:var(--blue);">km</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">集配記録</div>
+  <div class="d-cards" id="d-cards"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">経費</div>
+  <div class="card">
+    <div class="form-row"><label>高速代</label><input type="number" id="e-hw" inputmode="numeric" placeholder="0" oninput="calcExp()"><span class="unit">円</span></div>
+    <div class="form-row"><label>駐車代</label><input type="number" id="e-pk" inputmode="numeric" placeholder="0" oninput="calcExp()"><span class="unit">円</span></div>
+    <div class="form-row"><label>その他</label><input type="number" id="e-ot" inputmode="numeric" placeholder="0" oninput="calcExp()"><span class="unit">円</span></div>
+    <div style="padding:10px 14px;">
+      <div class="exp-total"><span class="exp-total-lbl">合　計</span><span class="exp-total-val"><span id="exp-total">0</span> 円</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">特記事項・メモ</div>
+  <div class="card" style="padding:12px 14px;">
+    <textarea class="memo-ta" id="memo" placeholder="キャンセル・事故・特記事項など"></textarea>
+  </div>
+</div>
+
+<div class="fixed-btn">
+  <button class="btn-print btn-pdf" onclick="doPDF()">📄 PDF保存</button>
+  <button class="btn-print btn-prn" onclick="doPrint()">🖨 印刷</button>
+</div>
+
+<script>
+const now = new Date();
+const ymd = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+document.getElementById('run-date').value = ymd;
+onDateChange();
+
+function onDateChange() {
+  const v = document.getElementById('run-date').value;
+  if (!v) return;
+  const d = new Date(v);
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('hd-date').textContent =
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+}
+
+const dc = document.getElementById('d-cards');
+for (let i = 1; i <= 20; i++) {
+  const el = document.createElement('div');
+  el.className = 'd-card'; el.id = `dc${i}`;
+  el.innerHTML = `
+    <div class="d-head" onclick="tog(${i})">
+      <div class="d-num">${i}</div>
+      <div class="d-prev" id="pv${i}">未入力</div>
+      <div class="d-arrow">▼</div>
+    </div>
+    <div class="d-body">
+      <div class="df"><label>着 時刻</label>
+        <div class="time-wrap">
+          <input type="number" min="0" max="23" inputmode="numeric" placeholder="--" id="ah${i}" oninput="upPrev(${i})">
+          <span class="time-sep">:</span>
+          <input type="number" min="0" max="59" inputmode="numeric" placeholder="--" id="am${i}" oninput="upPrev(${i})">
+        </div>
+      </div>
+      <div class="df"><label>発 時刻</label>
+        <div class="time-wrap">
+          <input type="number" min="0" max="23" inputmode="numeric" placeholder="--" id="dh${i}" oninput="upPrev(${i})">
+          <span class="time-sep">:</span>
+          <input type="number" min="0" max="59" inputmode="numeric" placeholder="--" id="dm${i}" oninput="upPrev(${i})">
+        </div>
+      </div>
+      <div class="df"><label>住 所</label><input type="text" id="addr${i}" placeholder="集配先名・住所" oninput="upPrev(${i})"></div>
+      <div class="df"><label>件数/個数</label>
+        <div class="nums">
+          <div class="num-item"><label>件数</label><input type="number" inputmode="numeric" id="n1-${i}" placeholder="0"></div>
+          <div class="num-item"><label>個数</label><input type="number" inputmode="numeric" id="n2-${i}" placeholder="0"></div>
+        </div>
+      </div>
+      <div class="df"><label>業 務</label>
+        <div class="chks">
+          <div class="chk-btn" id="cb-d${i}" onclick="togChk('d',${i})">🚚 配達</div>
+          <div class="chk-btn" id="cb-p${i}" onclick="togChk('p',${i})">📦 集荷</div>
+        </div>
+      </div>
+      <div class="df"><label>備 考</label><input type="text" id="note${i}" placeholder="例：助手 10:00"></div>
+    </div>`;
+  dc.appendChild(el);
+}
+
+const chkState = {};
+function tog(i) { document.getElementById(`dc${i}`).classList.toggle('open'); }
+function togChk(t,i) {
+  const key=t+i; chkState[key]=!chkState[key];
+  const el=document.getElementById(`cb-${t}${i}`);
+  el.classList.remove('on-d','on-p');
+  if(chkState[key]) el.classList.add(t==='d'?'on-d':'on-p');
+}
+function upPrev(i) {
+  const addr=document.getElementById(`addr${i}`).value;
+  const ah=document.getElementById(`ah${i}`).value;
+  const am=document.getElementById(`am${i}`).value;
+  const pv=document.getElementById(`pv${i}`);
+  const card=document.getElementById(`dc${i}`);
+  if(addr||ah){
+    const t=(ah!=='')?`${String(ah).padStart(2,'0')}:${String(am||0).padStart(2,'0')} `:'';
+    pv.textContent=t+(addr||''); pv.classList.add('on'); card.classList.add('filled');
+  } else { pv.textContent='未入力'; pv.classList.remove('on'); card.classList.remove('filled'); }
+}
+function calcDist(){
+  const s=+document.getElementById('start-m').value||0;
+  const e=+document.getElementById('end-m').value||0;
+  document.getElementById('dist-disp').textContent=(e>s&&s>0)?(e-s).toLocaleString():'－';
+}
+function calcExp(){
+  const t=['e-hw','e-pk','e-ot'].reduce((s,id)=>s+(+document.getElementById(id).value||0),0);
+  document.getElementById('exp-total').textContent=t.toLocaleString();
+}
+
+function buildPrint(){
+  const v=id=>document.getElementById(id).value;
+  const dateVal=v('run-date'); let dateStr=dateVal;
+  if(dateVal){ const d=new Date(dateVal); const days=['日','月','火','水','木','金','土']; dateStr=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`; }
+  document.getElementById('p-head-right').innerHTML=`運行日：${dateStr}　ドライバー：${v('driver')}`;
+  document.getElementById('p-carnum').textContent=v('car-num');
+  document.getElementById('p-date').textContent=dateStr;
+  document.getElementById('p-loc').textContent=v('location');
+  document.getElementById('p-driver').textContent=v('driver');
+  const sm=v('start-m'),em=v('end-m');
+  document.getElementById('p-sm').textContent=sm?Number(sm).toLocaleString():'－';
+  document.getElementById('p-em').textContent=em?Number(em).toLocaleString():'－';
+  const dist=(sm&&em&&+em>+sm)?(+em-+sm):null;
+  document.getElementById('p-dist').textContent=dist?dist.toLocaleString():'－';
+
+  const tbody=document.getElementById('p-tbody'); tbody.innerHTML='';
+  let has=false;
+  for(let i=1;i<=20;i++){
+    const addr=document.getElementById(`addr${i}`).value;
+    const ah=document.getElementById(`ah${i}`).value;
+    const am=document.getElementById(`am${i}`).value;
+    const dh=document.getElementById(`dh${i}`).value;
+    const dm=document.getElementById(`dm${i}`).value;
+    const n1=document.getElementById(`n1-${i}`).value;
+    const n2=document.getElementById(`n2-${i}`).value;
+    const note=document.getElementById(`note${i}`).value;
+    const isD=!!chkState[`d${i}`]; const isP=!!chkState[`p${i}`];
+    if(!addr&&!ah) continue;
+    has=true;
+    const tr=document.createElement('tr');
+    const ft=(h,m)=>(h!==''||m!=='')?`${String(h||0).padStart(2,'0')}:${String(m||0).padStart(2,'0')}`:' ';
+    tr.innerHTML=`<td class="p-num">${i}</td><td class="p-time">${ft(ah,am)}</td><td class="p-time">${ft(dh,dm)}</td><td class="p-addr">${addr}</td><td class="p-cnt">${n1||''}</td><td class="p-cnt">${n2||''}</td><td class="p-chk">${isD?'✓':''}</td><td class="p-chk">${isP?'✓':''}</td><td class="p-note">${note}</td>`;
+    tbody.appendChild(tr);
+  }
+  if(!has){
+    for(let i=0;i<8;i++){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="p-num">${i+1}</td><td class="p-time"> </td><td class="p-time"> </td><td class="p-addr"> </td><td class="p-cnt"> </td><td class="p-cnt"> </td><td class="p-chk"> </td><td class="p-chk"> </td><td class="p-note"> </td>`;
+      tbody.appendChild(tr);
+    }
+  }
+  const hw=+document.getElementById('e-hw').value||0;
+  const pk=+document.getElementById('e-pk').value||0;
+  const ot=+document.getElementById('e-ot').value||0;
+  document.getElementById('p-hw').textContent=hw?hw.toLocaleString()+'円':'－';
+  document.getElementById('p-pk').textContent=pk?pk.toLocaleString()+'円':'－';
+  document.getElementById('p-ot').textContent=ot?ot.toLocaleString()+'円':'－';
+  const tot=hw+pk+ot;
+  document.getElementById('p-total').textContent=tot?tot.toLocaleString()+'円':'－';
+  document.getElementById('p-memo').textContent=document.getElementById('memo').value;
+}
+
+function doPrint(){ buildPrint(); setTimeout(()=>window.print(),80); }
+function doPDF(){ buildPrint(); setTimeout(()=>window.print(),80); }
+
+function resetForm(){
+  if(!confirm('運行日・メーター・集配記録・経費をリセットします。\n（車両番号・所属箇所・ドライバーは保持されます）')) return;
+  // 車両番号・所属箇所・ドライバーは保持
+  const keep = {
+    'car-num': document.getElementById('car-num').value,
+    'location': document.getElementById('location').value,
+    'driver': document.getElementById('driver').value,
+  };
+  document.querySelectorAll('input[type=text],input[type=number],textarea').forEach(el=>el.value='');
+  // 保持した値を戻す
+  document.getElementById('car-num').value = keep['car-num'];
+  document.getElementById('location').value = keep['location'];
+  document.getElementById('driver').value = keep['driver'];
+  for(let i=1;i<=20;i++){
+    chkState[`d${i}`]=false; chkState[`p${i}`]=false;
+    document.getElementById(`cb-d${i}`).classList.remove('on-d');
+    document.getElementById(`cb-p${i}`).classList.remove('on-p');
+    document.getElementById(`dc${i}`).classList.remove('open','filled');
+    document.getElementById(`pv${i}`).textContent='未入力';
+    document.getElementById(`pv${i}`).classList.remove('on');
+  }
+  document.getElementById('dist-disp').textContent='－';
+  document.getElementById('exp-total').textContent='0';
+  const n=new Date();
+  document.getElementById('run-date').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  onDateChange();
+}
+</script>
+</body>
+</html>
